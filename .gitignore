@@ -1,3 +1,7 @@
+# Project logs and 3rd party executables
+/logs
+/drivers
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
