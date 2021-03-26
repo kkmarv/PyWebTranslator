@@ -1,7 +1,5 @@
-from browsers.browser import Edge
-from translator import DeepL
+from apis.translatorapi import DeepL
+from seleniumbrowsers.browsers import Edge
 
-a = DeepL(Edge)
-a.source_language = "de"
-a.target_language = "ru"
+a = Edge(DeepL, headless=False).api
 print(a.translate("Hallo"))
