@@ -4,8 +4,11 @@ from enum import Enum
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.expected_conditions import presence_of_element_located
 from selenium.webdriver.support.wait import WebDriverWait
+
+from seleniumbrowsers.expectations import TextIsPresent
 from seleniumbrowsers.expectations import TextNotPresentAndTextShorterThan
 
 
@@ -20,6 +23,7 @@ class TranslatorAPI(ABC):
 
         self.browser = browser
         self.browser.get(url)
+
         self.wait_for_ui = WebDriverWait(self.browser, 5)
         self.wait_for_translation = WebDriverWait(self.browser, timeout_threshold)
 
@@ -28,11 +32,11 @@ class TranslatorAPI(ABC):
 
         self.sourceLang = ""
         self.targetLang = ""
-        self.supported_languages = {}
+        self.supported_languages = self.get_supported_languages()
 
         super().__init__()
 
-    def search_css(self, css: str):
+    def search_css(self, css: str) -> WebElement:
         """
         Searches for given CSS location in HTML text and returns element if found.
         :param css: CSS path to look for
@@ -41,7 +45,7 @@ class TranslatorAPI(ABC):
 
     def translate(self, text: str) -> str:
         """
-        Parses given text to website and returns whatever is given back.
+        Parses given text to website and calls get_translation().
         Returns empty string if request times out.
         """
         if len(text) > 1:
@@ -54,13 +58,13 @@ class TranslatorAPI(ABC):
             return text
 
     @abstractmethod
-    def get_translation(self):
-        """ Defines the procedure to handle the translation a specific website. """
+    def get_translation(self) -> str:
+        """Defines the procedure to retrieve translations from a specific website."""
         pass
 
     @abstractmethod
-    def get_supported_languages(self):
-        """ Defines the procedure to get all supported languages from a specific website. """
+    def get_supported_languages(self) -> dict:
+        """Defines the procedure to get all supported languages from a specific website."""
         pass
 
     # Getter & Setter
@@ -103,17 +107,22 @@ class DeepL(TranslatorAPI):
         target_textarea = r"textarea[dl-test='translator-target-input']"
         super().__init__(browser, url, source_textarea, target_textarea, timeout_threshold)
 
-        self.supported_languages = self.get_supported_languages()
-
     def get_translation(self) -> str:
-        self.wait_for_translation.until(
-            TextNotPresentAndTextShorterThan(self.target_textarea, '[...]', 2))
+        self.wait_for_translation.until(TextNotPresentAndTextShorterThan(self.target_textarea, '[...]', 2))
         translation = self.target_textarea.get_attribute('value')
         self.source_textarea.clear()
         return translation
 
-    def get_supported_languages(self):
-        return {}
+    def get_supported_languages(self) -> dict:
+        self.search_css("button[dl-test='translator-source-lang-btn']").click()
+        source_language_button_list_div = self.search_css("div[dl-test='translator-source-lang-list']")
+        source_language_button_list = source_language_button_list_div.find_elements_by_css_selector("*")
+        supported_languages = {}
+        for button in source_language_button_list:
+            self.wait_for_ui.until(TextIsPresent(button))
+            language = button.text
+            supported_languages[language] = "".join(language[:3]).lower()
+        return supported_languages
 
     @property
     def source_language(self):
@@ -131,7 +140,7 @@ class DeepL(TranslatorAPI):
 
     @source_language.setter
     def source_language(self, lang):
-        if lang in self.supported_languages.values():  # if source_language is a valid selection
+        if lang in self.supported_languages.keys():  # if source_language is a valid selection
             if lang != self.source_language:  # skip changing if its already selected
                 self.search_css("button[dl-test='translator-source-lang-btn']").click()
                 self.search_css(f"button[dl-test='translator-lang-option-{lang.lower()}']").click()
@@ -140,7 +149,7 @@ class DeepL(TranslatorAPI):
 
     @target_language.setter
     def target_language(self, lang):
-        if lang in self.supported_languages.values():  # if target_language is a valid selection
+        if lang in self.supported_languages.keys():  # if target_language is a valid selection
             if lang != self.target_language:  # skip changing if its already selected
                 if lang != self.source_language:
                     self.search_css("button[dl-test='translator-target-lang-btn']").click()
