@@ -7,7 +7,7 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 from translatorapi import TranslatorAPI
 
-SERVICE_LOG_PATH = r"./browsers/logs/"
+SERVICE_LOG_PATH = r"./seleniumbrowsers/logs/"
 
 
 class Browser(ABC):
