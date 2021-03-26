@@ -99,7 +99,7 @@ class TranslatorAPI(ABC):
 
 class DeepL(TranslatorAPI):
     """
-    API to interact with DeepL online translator at https://www.deepl.com/.
+    API to interact with DeepL online translator at https://www.deepl.com/
     Holds all information and methods to interact with the website.
     """
 
@@ -139,6 +139,7 @@ class DeepL(TranslatorAPI):
         language = self.search_css("button[dl-test='translator-source-lang-btn']").text
         # websites display and source text don't match here so we have to correct it:
         language = "Any language (detect)" if "ny language" in language else language
+        language = language.split(" ")[2] if "Translate from" in language else language
         return list(self.supported_languages.keys())[list(self.supported_languages.values()).index(language)]
 
     @property
