@@ -1,6 +1,7 @@
 from abc import ABC
 
 from msedge.selenium_tools import Edge as EdgeDriver, EdgeOptions
+from selenium import webdriver
 from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
@@ -13,7 +14,13 @@ SERVICE_LOG_PATH = r"./seleniumbrowsers/logs/"
 class Browser(ABC):
     """ Base class for all Browsers. """
 
-    def __init__(self, browser, api_sub_class: TranslatorAPI.__class__):
+    def __init__(self, browser: webdriver, api_sub_class: TranslatorAPI.__class__):
+        """
+        Sets up browser window from given webdriver and instantiates given API.
+
+        :param browser: Selenium webdriver object
+        :param api_sub_class: Reference to a TranslatorAPI sub class
+        """
         self.browser = browser
         self.browser.set_window_position(0, 0)
         self.browser.set_window_size(1920, 1080)
@@ -31,7 +38,9 @@ class Firefox(Browser):
 
     def __init__(self, api_sub_class: TranslatorAPI.__class__, headless=True):
         """
-        :param api_sub_class:
+        Instantiates a selenium webdriver.Firefox object and calls super class.
+
+        :param api_sub_class: Reference to a TranslatorAPI sub class
         :param headless: Whether the browser should be headless or not
         """
         browser_options: FirefoxOptions = FirefoxOptions()
@@ -49,6 +58,12 @@ class Edge(Browser):
     """
 
     def __init__(self, api_sub_class: TranslatorAPI.__class__, headless=True):
+        """
+        Instantiates a selenium webdriver.Edge object and calls super class.
+
+        :param api_sub_class: Reference to a TranslatorAPI sub class
+        :param headless: Whether the browser should be headless or not
+        """
         browser_options: EdgeOptions = EdgeOptions()
         browser_options.use_chromium = True
         if headless:
