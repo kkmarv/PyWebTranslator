@@ -50,17 +50,17 @@ class TranslatorAPI(ABC):
         """
         return self.wait_for_ui.until(presence_of_element_located((By.CSS_SELECTOR, css)))
 
-    def translate(self, text: str) -> str:
+    def translate(self, text: str):
         """
-        Parses given text to website and calls get_translation().
-        Returns empty string if request times out.
+        Parses given text to website, calls get_translation() and returns its result.
+        Returns None if get_translation() times out.
         """
         if len(text) > 1:
             self.source_textarea.send_keys(text)
             try:
                 return self.get_translation()
             except TimeoutException:
-                return ""
+                return None
         else:  # just return the text if its a single letter
             return text
 
