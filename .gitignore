@@ -1,7 +1,7 @@
 # Project logs and 3rd party executables
 /logs
 /drivers
-/pyTranslate/browsers/logs
+pyWebTranslate/seleniumbrowsers/logs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
