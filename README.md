@@ -1,1 +1,1 @@
-# pyTranslate
+# pyWebTranslate
