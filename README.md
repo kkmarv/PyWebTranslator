@@ -1,1 +1,1 @@
-# DeepLTranslator
+# pyTranslate
