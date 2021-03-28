@@ -30,14 +30,14 @@ class TranslatorAPI(ABC):
         :param timeout_threshold: Timeout in seconds after which a translation request throws a TimeoutException
         """
 
-        self.browser = browser
+        self.browser: webdriver = browser
         self.browser.get(url)
 
-        self.wait_for_ui = WebDriverWait(self.browser, 5)
+        self.wait_for_ui = WebDriverWait(self.browser, 1)
         self.wait_for_translation = WebDriverWait(self.browser, timeout_threshold)
 
-        self.source_textarea = self.search_css(source_textarea)
-        self.target_textarea = self.search_css(target_textarea)
+        self.source_textarea: WebElement = self.search_css(source_textarea)
+        self.target_textarea: WebElement = self.search_css(target_textarea)
 
         self.supported_languages = self.get_supported_languages()
 
@@ -103,8 +103,6 @@ class DeepL(TranslatorAPI):
     Holds all information and methods to interact with the website.
     """
 
-    # TODO paywall detection und restart hinzufügen
-
     def __init__(self, browser: webdriver, timeout_threshold=30):
         """
         Calls super class with specific information on how to set up DeepL online translation.
@@ -112,10 +110,19 @@ class DeepL(TranslatorAPI):
         :param browser: Selenium webdriver object
         :param timeout_threshold: Timeout in seconds after which a translation request throws a TimeoutException
         """
-        url = "https://www.deepl.com/"
+        url = r"https://www.deepl.com/"
         source_textarea = r"textarea[dl-test='translator-source-input']"
         target_textarea = r"textarea[dl-test='translator-target-input']"
         super().__init__(browser, url, source_textarea, target_textarea, timeout_threshold)
+
+    def is_paywall_visible(self):
+        paywall_div = r"div[class='lmt__notification__blocked_content']"
+        try:
+            self.search_css(paywall_div)
+        except TimeoutException:
+            return False
+        else:
+            return True
 
     def get_translation(self) -> str:
         self.wait_for_translation.until(TextNotPresentAndTextShorterThan(self.target_textarea, '[...]', 2))
