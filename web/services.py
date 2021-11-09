@@ -53,6 +53,14 @@ class TranslationService(ABC):
         """
         return self._wait_for_ui.until(presence_of_element_located((By.CSS_SELECTOR, css)))
 
+    def is_language_supported(self, language) -> bool:
+        """
+        Checks with the list of language on the website and returns if given language is supported.
+        :param language: The language to check if it is supported.
+        :return: Whether the given language is supported by this service or not.
+        """
+        return language is not None and language in self._supported_languages.keys()
+
     def translate(self, text: str, source_language=None, target_language=None) -> str:
         """
         Parses given text to website, calls _get_translation() and returns its result.
@@ -61,22 +69,10 @@ class TranslationService(ABC):
         if len(text) <= 1:  # return text if its just one letter
             return text
 
+        self._set_languages(source_language, target_language)
+
         # send the text to the website
         self._source_textarea.send_keys(text)
-
-        # check if source language is valid
-        if not (source_language is None or source_language == self._source_language):
-            if source_language in self._supported_languages.keys():
-                self._set_source_language(source_language)
-            else:
-                raise ValueError("Source language not supported!")
-
-        # check if target language is valid
-        if not (target_language is None or target_language == self._target_language):
-            if target_language in self._supported_languages.keys():
-                self._set_target_language(target_language)
-            else:
-                raise ValueError("Target language not supported!")
 
         #  await translation
         try:
@@ -112,6 +108,16 @@ class TranslationService(ABC):
     @abstractmethod
     def _set_target_language(self, language) -> None:
         """Defines the procedure to set the new target language on the website."""
+        pass
+
+    @abstractmethod
+    def _set_languages(self, source_language, target_language) -> None:
+        """Defines the procedure to set both languages at once on the website."""
+        pass
+
+    @abstractmethod
+    def _switch_languages(self) -> None:
+        """Defines the procedure to switch target- with source language on the website."""
         pass
 
     # Getter & Setter
@@ -152,10 +158,11 @@ class DeepL(TranslationService):
         self._source_language_list_div = r"div[dl-test='translator-source-lang-list']"
         self._source_language_list_button = r"button[dl-test='translator-source-lang-btn']"
         self._target_language_list_button = r"button[dl-test='translator-target-lang-btn']"
+        self._language_switch_div = r"div[class='lmt__language_container_switch']"
 
         super().__init__(browser, translation_service_url, source_textarea, target_textarea, timeout_threshold)
 
-    def is_paywall_visible(self):
+    def _is_paywall_visible(self) -> bool:
         try:
             self.search_css(self._paywall_div)
         except TimeoutException:
@@ -165,10 +172,8 @@ class DeepL(TranslationService):
 
     def _get_translation(self, from_text: str) -> str:
         if from_text in self._target_textarea.get_attribute('value'):  # wait for the text to refresh
-            print("text is present")
             self._wait_for_translation.until(TextNotPresent(self._target_textarea, from_text))
         # wait for the translation to appear
-        print("wait for translation")
         self._wait_for_translation.until(TextNotPresentAndTextShorterThan(self._target_textarea, '[...]', 2))
 
         translation = self._target_textarea.get_attribute('value')
@@ -210,27 +215,48 @@ class DeepL(TranslationService):
             if language in target_lang_button_text:
                 return list(self._supported_languages.keys())[list(self._supported_languages.values()).index(language)]
 
-    def _set_source_language(self, language) -> None:
-        if language in self._supported_languages.keys():  # if source_language is a valid selection
-            if language != self._source_language:  # skip changing if its already selected
-                self.search_css(self._source_language_list_button).click()
-                self.search_css(f"button[dl-test='translator-lang-option-{language.lower()}']").click()
-        else:
+    def _set_source_language(self, source_language) -> None:
+        if not self.is_language_supported(source_language):
             raise ValueError("Source language not supported!")
 
-    def _set_target_language(self, language) -> None:
-        if language in self._supported_languages.keys():  # if target_language is a valid selection
-            if language != self._target_language:  # skip changing if its already selected
-                if language != self._source_language:
-                    self.search_css(self._target_language_list_button).click()
-                    if language.lower() == 'en':
-                        self.search_css(
-                            f"button[dl-test='translator-lang-option-{language.lower()}-{'US'}']").click()
-                    else:
-                        self.search_css(
-                            f"button[dl-test='translator-lang-option-{language.lower()}-{language.upper()}']").click()
-        else:
+        if source_language != self._source_language:  # skip changing if its already selected
+            self.search_css(self._source_language_list_button).click()
+            self.search_css(f"button[dl-test='translator-lang-option-{source_language.lower()}']").click()
+            self._source_language = source_language
+
+    def _set_target_language(self, target_language) -> None:
+        if not self.is_language_supported(target_language):
             raise ValueError("Target language not supported!")
+
+        if target_language != self._target_language:  # skip changing if its already selected
+            if target_language != self._source_language:
+                self.search_css(self._target_language_list_button).click()
+                # the following used to distinct between en-US and en-GB dialects
+                # if target_language.lower() == 'en':
+                #     self.search_css(
+                #         f"button[dl-test='translator-lang-option-{target_language.lower()}-{'US'}']").click()
+                # else:
+                self.search_css(
+                    f"button[dl-test='translator-lang-option-{target_language.lower()}-{target_language.upper()}']").click()
+                self._target_language = target_language
+
+    def _set_languages(self, source_language, target_language) -> None:
+        if not self.is_language_supported(source_language):
+            raise ValueError("Source language not supported!")
+        if not self.is_language_supported(target_language):
+            raise ValueError("Target language not supported!")
+
+        # use the websites' button to change languages if they are reversed
+        if source_language == self._source_language and target_language == self._source_language:
+            self._switch_languages()
+        else:
+            self._set_source_language(source_language)
+            self._set_target_language(target_language)
+
+    def _switch_languages(self) -> None:
+        self.search_css(self._language_switch_div).click()
+        # switch class variables too
+        self._source_language, self._target_language = self._target_language, self._source_language
 
 
 class Google(TranslationService):
