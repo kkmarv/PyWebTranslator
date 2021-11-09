@@ -10,9 +10,9 @@ from msedge.selenium_tools import Edge as EdgeDriver, EdgeOptions
 
 SERVICE_LOG_PATH = r'./logs/'
 WEBDRIVER_ARGUMENTS = {
-    'path': r'./webdrivers/',
-    'log_level': 0,
-    'print_first_line': False
+    'path': r'./webdrivers/',  # drivers download folder
+    'log_level': 0,  # not logging to console
+    'print_first_line': False  # do not print line break
 }
 
 # create paths

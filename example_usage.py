@@ -1,13 +1,14 @@
-from web.browsers import Firefox
-from web.services import DeepL
+from src.services import DeepL
+from src.browsers import Firefox
 
 
 """
-Example use:
+Some examples for usage:
 """
 
 if __name__ == "__main__":
-    translator = DeepL(Firefox(is_headless=False, stay_open=False))
+    browser = Firefox(is_headless=True, stay_open=False)
+    translator = DeepL(browser)
 
     # get all languages the website offers for translation
     print(translator.supported_languages)
@@ -21,6 +22,11 @@ if __name__ == "__main__":
     print(translator.translate("Passi ist eine kleine Spinne.", source_language="de", target_language="da"))
     print(translator.translate("Passi er en lille edderkop.", source_language="da", target_language="en"))
 
+    # translate english stuff
+    print(translator.translate("Eine Weißwurst, bitte.", "de", "en"))
+    print(translator.translate("Hello", "en", "de"))
+    print(translator.translate("Eine Weißwurst, bitte.", "de", "ru"))
+
     # translate text in same language but fast
     print(translator.translate("Hello", source_language="en", target_language="de"))
     print(translator.translate("I", source_language="en", target_language="de"))
@@ -32,4 +38,6 @@ if __name__ == "__main__":
     print(translator.translate("will", source_language="en", target_language="de"))
     print(translator.translate("spank", source_language="en", target_language="de"))
     print(translator.translate("you", source_language="en", target_language="de"))
+
+    # yes
     print(translator.translate("Hej I am din mor og I vil smæk du", source_language="da", target_language="ru"))
