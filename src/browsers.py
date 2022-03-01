@@ -1,87 +1,87 @@
-import os.path
+import os
 
 from abc import ABC
 from selenium import webdriver
-from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
-from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from msedge.selenium_tools import Edge as EdgeDriver, EdgeOptions
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.edge.service import Service as EService
+from selenium.webdriver.firefox.service import Service as FFService
+from selenium.webdriver import (
+    Edge as EdgeDriver, EdgeOptions,
+    Firefox as FirefoxDriver, FirefoxOptions
+)
 
+WEBDRIVER_EXEC_DIR = os.path.normpath(r'./.webdrivers')
+SERVICE_LOG_DIR = os.path.normpath(f'{WEBDRIVER_EXEC_DIR}/logs/')
 
-SERVICE_LOG_PATH = r'./logs/'
-WEBDRIVER_ARGUMENTS = {
-    'path': r'./webdrivers/',  # drivers download folder
-    'log_level': 0,  # not logging to console
-    'print_first_line': False  # do not print line break
-}
+# WebDriver manager environ vars
+os.environ['WDM_LOG_LEVEL'] = '0'  # disable console logs
+os.environ['WDM_PRINT_FIRST_LINE'] = 'False'  # disable blank line printed to console
 
-# create paths
-if not os.path.exists(SERVICE_LOG_PATH):
-    os.mkdir(SERVICE_LOG_PATH)
-if not os.path.exists(WEBDRIVER_ARGUMENTS['path']):
-    os.mkdir(WEBDRIVER_ARGUMENTS['path'])
+# create WebDriver directories
+if not os.path.exists(WEBDRIVER_EXEC_DIR):
+    os.mkdir(WEBDRIVER_EXEC_DIR)
+    os.mkdir(SERVICE_LOG_DIR)
+elif not os.path.exists(SERVICE_LOG_DIR):
+    os.mkdir(SERVICE_LOG_DIR)
 
 
 class Browser(ABC):
-    """Abstract Browser class"""
+    """Abstract superclass for browsers. Use a specific Browser class to instantiate a browser session."""
 
-    def __init__(self, driver: webdriver, is_headless: bool, stay_open: bool):
+    def __init__(self, driver: webdriver):
         """
-        Creates a browser session with given driver and translation service.
-
         :param driver: Which driver to use
-        :param stay_open: Whether the browser window will close after its finished or not.
         """
+        self.__driver: webdriver = driver
+        self.__driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
-        self._driver: webdriver = driver
-        self._driver.set_window_position(0, 0)
-        self._driver.set_window_size(1920, 1080)
+    def get(self, url: str):
+        """Calls an URL in the browser."""
+        self.driver.get(url)
 
-        self._stay_open = stay_open
-        self._is_headless = is_headless
+    def __enter__(self):
+        return self
 
-    def __del__(self):
-        """Makes sure to properly quit the driver before exiting the program."""
-        self._driver.close() if (self._is_headless or not self._stay_open) else None
-
-    # Getter & Setter
+    def __exit__(self, exc_type, exc_val, exc_tb):  # properly quit the driver and close the browser window
+        self.__driver.close()
+        self.__driver.quit()
 
     @property
-    def driver(self) -> webdriver:
-        return self._driver
+    def driver(self):
+        return self.__driver
 
 
 class Firefox(Browser):
-    def __init__(self, is_headless=True, stay_open=False):
+    def __init__(self, is_headless=True):
         """Creates a Firefox browser session.
 
-        :param is_headless: Whether the browser should run in the background (without GUI) or not.
-        :param stay_open: Whether the browser window will close after its finished or not. is_headless has to be set to False for this to take effect. This is to prevent processes from idling in the background.
+        :param is_headless: Whether the browser should run in the background (without GUI).
         """
 
-        # prepare webdriver options
+        # prepare WebDriver options
         driver_options: FirefoxOptions = FirefoxOptions()
         driver_options.headless = is_headless
 
-        # create a selenium driver and install the webdriver for selenium usage
-        firefox_driver: FirefoxDriver = FirefoxDriver(
-            executable_path=GeckoDriverManager(**WEBDRIVER_ARGUMENTS).install(),
-            service_log_path=SERVICE_LOG_PATH + r'geckodriver.log',
+        # create a selenium WebDriver
+        firefox_driver: FirefoxDriver = webdriver.Firefox(
+            service=FFService(
+                log_path=f'{SERVICE_LOG_DIR}/geckodriver.log',
+                executable_path=GeckoDriverManager(path=WEBDRIVER_EXEC_DIR).install()),  # install the WebDriver
             options=driver_options
         )
 
-        super().__init__(firefox_driver, is_headless, stay_open)
+        super().__init__(firefox_driver)
 
 
 class Edge(Browser):
-    def __init__(self, is_headless=True, stay_open=False):
-        """Creates a Edge browser session.
+    def __init__(self, is_headless=True):
+        """Creates an Edge browser session.
 
-        :param is_headless: Whether the browser should run in the background (without GUI) or not.
-        :param stay_open: Whether the browser window will close after its finished or not. is_headless has to be set to False for this to take effect. This is to prevent processes from idling in the background.
+        :param is_headless: Whether the browser should run in the background (without GUI).
         """
 
-        # prepare webdriver options
+        # prepare WebDriver options
         driver_options: EdgeOptions = EdgeOptions()
         driver_options.use_chromium = True
 
@@ -89,11 +89,13 @@ class Edge(Browser):
             driver_options.add_argument('is_headless')
             driver_options.add_argument('disable-gpu')
 
-        # create a selenium driver and install the webdriver for selenium usage
+        # create a selenium WebDriver
         edge_driver: EdgeDriver = EdgeDriver(
-            executable_path=EdgeChromiumDriverManager(**WEBDRIVER_ARGUMENTS).install(),
-            service_log_path=SERVICE_LOG_PATH + r'msedgedriver.log',
+            service=EService(
+                log_path=f'{SERVICE_LOG_DIR}/msedgedriver.log',
+                executable_path=EdgeChromiumDriverManager(path=WEBDRIVER_EXEC_DIR).install()  # install the WebDriver
+            ),
             options=driver_options
         )
 
-        super().__init__(edge_driver, is_headless, stay_open)
+        super().__init__(edge_driver)

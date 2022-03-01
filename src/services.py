@@ -1,48 +1,50 @@
 from abc import ABC, abstractmethod
 
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from .browsers import Browser
+from .expectations import IsTextPresent, TextNotPresent, TextNotPresentAndTextShorterThan
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.expected_conditions import presence_of_element_located
-
-from .browsers import Browser
-from .expectations import IsTextPresent, TextNotPresent, TextNotPresentAndTextShorterThan
+from selenium.common.exceptions import TimeoutException
 
 
-class AbstractTranslationService(ABC):
-    """Translation services base class."""
+class TranslationService(ABC):
+    """Translation services base class. Use a specific TranslationService class to start translating."""
 
     def __init__(self,
-                 browser: Browser.__class__,
+                 browser: Browser,
                  translation_service_url: str,
-                 source_textarea: str,
-                 target_textarea: str,
+                 src_textarea: str,
+                 tgt_textarea: str,
                  timeout_threshold: int):
         """
-        Calls the specified URL in the specified browser and sets up the website to allow further translation.
+        Calls given URL in given browser and sets up the website for the translation process.
 
-        :param browser: Selenium webdriver object
-        :param translation_service_url: URL of the specified translation service which to open in browser
-        :param source_textarea: CSS path to source language textarea within the website
-        :param target_textarea: CSS path to target language textarea within the website
+        :param browser: The Browser class to use
+        :param translation_service_url: URL of the specified translation service
+        :param src_textarea: CSS path to the source language textarea within the website
+        :param tgt_textarea: CSS path to the target language textarea within the website
         :param timeout_threshold: Timeout in seconds after which a translation request throws a TimeoutException
         """
 
-        self._driver: webdriver = browser.driver
-        self._driver.get(translation_service_url)
+        # instantiate a browser
+        self._browser: Browser = browser
+        self._browser.get(translation_service_url)
 
-        self._wait_for_ui = WebDriverWait(self._driver, 1)
-        self._wait_for_translation = WebDriverWait(self._driver, timeout_threshold)
+        # initialize timeout thresholds
+        self._wait_for_ui: WebDriverWait = WebDriverWait(self._browser.driver, 1)
+        self._wait_for_translation: WebDriverWait = WebDriverWait(self._browser.driver, timeout_threshold)
 
-        self._source_textarea: WebElement = self.search_css(source_textarea)
-        self._target_textarea: WebElement = self.search_css(target_textarea)
+        # get the text areas that are relevant for translating
+        self._src_textarea: WebElement = self.search_css(src_textarea)
+        self._tgt_textarea: WebElement = self.search_css(tgt_textarea)
 
-        self._supported_languages: dict = self._get_supported_languages()
-
-        self._source_language = self._get_source_language()
-        self._target_language = self._get_target_language()
+        # initialize current selected languages
+        self._supported_langs: dict = self._get_supported_languages()
+        self._current_src_lang: str = self._get_source_language()
+        self._current_tgt_lang: str = self._get_target_language()
 
         super().__init__()
 
@@ -59,7 +61,7 @@ class AbstractTranslationService(ABC):
         :param language: The language to check if it is supported.
         :return: Whether the given language is supported by this service or not.
         """
-        return language is not None and language in self._supported_languages.keys()
+        return language is not None and language in self._supported_langs.keys()
 
     def translate(self, text: str, source_language=None, target_language=None) -> str:
         """
@@ -72,7 +74,7 @@ class AbstractTranslationService(ABC):
         self._set_languages(source_language, target_language)
 
         # send the text to the website
-        self._source_textarea.send_keys(text)
+        self._src_textarea.send_keys(text)
 
         try:  # await translation
             return self._get_translation(text)
@@ -81,7 +83,7 @@ class AbstractTranslationService(ABC):
 
     @abstractmethod
     def _get_translation(self, from_text: str) -> str:
-        """Defines the procedure to retrieve translations from the website."""
+        """Defines the procedure to retrieve a translation from the website."""
         pass
 
     @abstractmethod
@@ -90,12 +92,12 @@ class AbstractTranslationService(ABC):
         pass
 
     @abstractmethod
-    def _get_source_language(self):
+    def _get_source_language(self) -> str:
         """Defines the procedure to get the current input source language from the website."""
         pass
 
     @abstractmethod
-    def _get_target_language(self):
+    def _get_target_language(self) -> str:
         """Defines the procedure to get the current output target language from the website."""
         pass
 
@@ -110,7 +112,7 @@ class AbstractTranslationService(ABC):
         pass
 
     @abstractmethod
-    def _set_languages(self, source_language, target_language) -> None:
+    def _set_languages(self, src_lang, tgt_lang) -> None:
         """Defines the procedure to set both languages at once on the website."""
         pass
 
@@ -123,146 +125,143 @@ class AbstractTranslationService(ABC):
 
     @property
     def supported_languages(self) -> dict:
-        return self._supported_languages
+        return self._supported_langs
 
     @property
-    def source_language(self):
-        return self._source_language
+    def source_language(self) -> str:
+        return self._current_src_lang
 
     @property
-    def target_language(self):
-        return self._target_language
+    def target_language(self) -> str:
+        return self._current_tgt_lang
 
 
-class DeepL(AbstractTranslationService):
-    """
-    API to interact with DeepL online translator at https://www.deepl.com/
-    Holds all information and methods to interact with the website.
-    """
+class DeepL(TranslationService):
+    """Holds information and methods to interact with www.deepl.com."""
 
-    def __init__(self, browser: webdriver, timeout_threshold=30):
-        """
-        Calls super class with specific information on how to set up DeepL online translation.
+    URL = r"https://www.deepl.com/"
+    SRC_TEXTAREA = r"textarea[dl-test='translator-source-input']"
+    TGT_TEXTAREA = r"textarea[dl-test='translator-target-input']"
 
-        :param browser: Selenium webdriver object
-        :param timeout_threshold: Timeout in seconds after which a translation request throws a TimeoutException
-        """
+    PAYWALL_DIV: str = r"div[class='lmt__notification__blocked_content']"
+    SRC_LANG_LIST: str = r".lmt__language_wrapper > .lmt__language_select_column > *"
+    SRC_LANG_LIST_DIV: str = r"div[dl-test='translator-source-lang-list']"
+    SRC_LANG_LIST_BTN: str = r"button[dl-test='translator-source-lang-btn']"
+    TGT_LANG_LIST_BTN: str = r"button[dl-test='translator-target-lang-btn']"
+    SWITCH_LANG_DIV: str = r"div[class='lmt__language_container_switch']"
 
-        self._PAYWALL_DIV: str = r"div[class='lmt__notification__blocked_content']"
-        self._SOURCE_LANGUAGE_LIST: str = r".lmt__language_wrapper > .lmt__language_select_column > *"
-        self._SOURCE_LANGUAGE_LIST_DIV: str = r"div[dl-test='translator-source-lang-list']"
-        self._SOURCE_LANGUAGE_LIST_BUTTON: str = r"button[dl-test='translator-source-lang-btn']"
-        self._TARGET_LANGUAGE_LIST_BUTTON: str = r"button[dl-test='translator-target-lang-btn']"
-        self._SWITCH_LANGUAGE_DIV: str = r"div[class='lmt__language_container_switch']"
-
-        translation_service_url = r"https://www.deepl.com/"
-        source_textarea = r"textarea[dl-test='translator-source-input']"
-        target_textarea = r"textarea[dl-test='translator-target-input']"
-        super().__init__(browser, translation_service_url, source_textarea, target_textarea, timeout_threshold)
+    def __init__(self, browser: Browser, timeout_threshold=30):
+        super().__init__(
+            browser=browser,
+            translation_service_url=self.URL,
+            src_textarea=self.SRC_TEXTAREA,
+            tgt_textarea=self.TGT_TEXTAREA,
+            timeout_threshold=timeout_threshold
+        )
 
     def _is_paywall_visible(self) -> bool:
         try:
-            self.search_css(self._PAYWALL_DIV)
+            self.search_css(self.PAYWALL_DIV)
             return True
         except TimeoutException:
             return False
 
     def _get_translation(self, from_text: str) -> str:
         # wait for the text to refresh
-        if from_text in self._target_textarea.get_attribute('value'):
-            self._wait_for_translation.until(TextNotPresent(self._target_textarea, from_text))
+        if from_text in self._tgt_textarea.get_attribute('value'):
+            self._wait_for_translation.until(TextNotPresent(self._tgt_textarea, from_text))
 
         # wait for the translation to appear
-        self._wait_for_translation.until(TextNotPresentAndTextShorterThan(self._target_textarea, '[...]', 2))
+        self._wait_for_translation.until(TextNotPresentAndTextShorterThan(self._tgt_textarea, '[...]', 2))
 
-        translation = self._target_textarea.get_attribute('value')
-        self._source_textarea.clear()
+        translation = self._tgt_textarea.get_attribute('value')
+        self._src_textarea.clear()
         return translation
 
     def _get_supported_languages(self) -> dict:
         # show language list
-        self.search_css(self._SOURCE_LANGUAGE_LIST_BUTTON).click()
+        self.search_css(self.SRC_LANG_LIST_BTN).click()
 
         # get the source language list
-        source_language_list_div = self.search_css(self._SOURCE_LANGUAGE_LIST_DIV)
-        source_language_list = source_language_list_div.find_elements(By.CSS_SELECTOR, self._SOURCE_LANGUAGE_LIST)
+        src_lang_list_div: WebElement = self.search_css(self.SRC_LANG_LIST_DIV)
+        src_lang_list: list[WebElement] = src_lang_list_div.find_elements(By.CSS_SELECTOR, self.SRC_LANG_LIST)
 
         # get supported languages from list
-        supported_languages = {}
-        for button in source_language_list:
+        supported_languages: dict = {}
+        for button in src_lang_list:
             self._wait_for_ui.until(IsTextPresent(button))
             language = button.text.split(" (")[0]  # used for auto detection which has braces
             language_id = button.get_attribute("dl-test").split("-")[3]
             supported_languages[language_id] = language
 
         # hide language list
-        self.search_css(self._SOURCE_LANGUAGE_LIST_BUTTON).click()
+        self.search_css(self.SRC_LANG_LIST_BTN).click()
         return supported_languages
 
     def _get_source_language(self) -> str:
-        src_language = self.search_css(self._SOURCE_LANGUAGE_LIST_BUTTON).text
-        # deepL has weird behaviour here: we need to remove overlapped text which is separated by a line break
+        src_language = self.search_css(self.SRC_LANG_LIST_BTN).text
+        # DeepL has weird behaviour here: we need to remove overlapped text which is separated by a line break
         src_language = src_language if '\n' not in src_language else src_language.split('\n')[1]
 
         # return the source language's key
-        return list(self._supported_languages.keys())[list(self._supported_languages.values()).index(src_language)]
+        return list(self._supported_langs.keys())[list(self._supported_langs.values()).index(src_language)]
 
     def _get_target_language(self) -> str:
-        target_lang_list_button_text = self.search_css(self._TARGET_LANGUAGE_LIST_BUTTON).text
-        for language in self._supported_languages.values():
+        tgt_lang_list_btn_text: str = self.search_css(self.TGT_LANG_LIST_BTN).text
+        for language in self._supported_langs.values():
             # we want to search only for those values that are in our supported_languages
-            if language in target_lang_list_button_text:
-                return list(self._supported_languages.keys())[list(self._supported_languages.values()).index(language)]
+            if language in tgt_lang_list_btn_text:
+                return list(self._supported_langs.keys())[list(self._supported_langs.values()).index(language)]
 
-    def _set_source_language(self, source_language) -> None:
-        if not self.is_language_supported(source_language):
+    def _set_source_language(self, src_lang) -> None:
+        if not self.is_language_supported(src_lang):
             raise ValueError("Source language not supported!")
 
-        if source_language != self._source_language:  # skip changing if its already selected
-            self.search_css(self._SOURCE_LANGUAGE_LIST_BUTTON).click()
-            self.search_css(f"button[dl-test='translator-lang-option-{source_language.lower()}']").click()
-            self._source_language = source_language
+        if src_lang != self._current_src_lang:  # skip changing if its already selected
+            self.search_css(self.SRC_LANG_LIST_BTN).click()
+            self.search_css(f"button[dl-test='translator-lang-option-{src_lang.lower()}']").click()
+            self._current_src_lang = src_lang
 
-    def _set_target_language(self, target_language) -> None:
-        if not self.is_language_supported(target_language):
+    def _set_target_language(self, tgt_lang) -> None:
+        if not self.is_language_supported(tgt_lang):
             raise ValueError("Target language not supported!")
 
-        if target_language != self._target_language:  # skip changing if its already selected
-            if target_language != self._source_language:
-                self.search_css(self._TARGET_LANGUAGE_LIST_BUTTON).click()
-                if target_language == 'en':
+        if tgt_lang != self._current_tgt_lang:  # skip changing if its already selected
+            if tgt_lang != self._current_src_lang:
+                self.search_css(self.TGT_LANG_LIST_BTN).click()
+                if tgt_lang == 'en':
                     try:  # deepL can't translate every language to english dialects, so try to select US at first
                         self.search_css(
-                            f"button[dl-test='translator-lang-option-{target_language.lower()}-{'US'}']"
+                            f"button[dl-test='translator-lang-option-{tgt_lang.lower()}-{'US'}']"
                         ).click()
                     except TimeoutException:  # if unsuccessful, select standard english
                         self.search_css(
-                            f"button[dl-test='translator-lang-option-{target_language.lower()}-{target_language.upper()}']"
+                            f"button[dl-test='translator-lang-option-{tgt_lang.lower()}-{tgt_lang.upper()}']"
                         ).click()
                 else:
                     self.search_css(
-                        f"button[dl-test='translator-lang-option-{target_language.lower()}-{target_language.upper()}']"
+                        f"button[dl-test='translator-lang-option-{tgt_lang.lower()}-{tgt_lang.upper()}']"
                     ).click()
-                self._target_language = target_language
+                self._current_tgt_lang = tgt_lang
 
-    def _set_languages(self, source_language, target_language) -> None:
-        if not self.is_language_supported(source_language):
+    def _set_languages(self, src_lang, tgt_lang) -> None:
+        if not self.is_language_supported(src_lang):
             raise ValueError("Source language not supported!")
-        if not self.is_language_supported(target_language):
+        if not self.is_language_supported(tgt_lang):
             raise ValueError("Target language not supported!")
 
-        # use the websites' button to change languages if they are reversed
-        if source_language == self._source_language and target_language == self._source_language:
+        # use the websites' button to change languages if they are in reversed order
+        if src_lang == self._current_src_lang and tgt_lang == self._current_src_lang:
             self._switch_languages()
         else:
-            self._set_source_language(source_language)
-            self._set_target_language(target_language)
+            self._set_source_language(src_lang)
+            self._set_target_language(tgt_lang)
 
     def _switch_languages(self) -> None:
-        self.search_css(self._SWITCH_LANGUAGE_DIV).click()
-        # switch class variables too
-        self._source_language, self._target_language = self._target_language, self._source_language
+        self.search_css(self.SWITCH_LANG_DIV).click()
+        self._current_src_lang, self._current_tgt_lang = self._current_tgt_lang, self._current_src_lang  # switch class variables too
 
 
-class Google(AbstractTranslationService):
+class Google(TranslationService):
+    """Holds information and methods to interact with translate.google.com."""
     pass  # TODO
