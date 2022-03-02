@@ -40,13 +40,6 @@ class Browser(ABC):
         """Calls an URL in the browser."""
         self.driver.get(url)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):  # properly quit the driver and close the browser window
-        self.__driver.close()
-        self.__driver.quit()
-
     @property
     def driver(self):
         return self.__driver

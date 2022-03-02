@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from .browsers import Browser
-from .expectations import IsTextPresent, TextNotPresent, TextNotPresentAndTextShorterThan
+from .expectations import IsTextPresent, TextNotPresent, TextNotPresentNorShorterThan
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -172,7 +172,7 @@ class DeepL(TranslationService):
             self._wait_for_translation.until(TextNotPresent(self._tgt_textarea, from_text))
 
         # wait for the translation to appear
-        self._wait_for_translation.until(TextNotPresentAndTextShorterThan(self._tgt_textarea, '[...]', 2))
+        self._wait_for_translation.until(TextNotPresentNorShorterThan(self._tgt_textarea, '[...]', 2))
 
         translation = self._tgt_textarea.get_attribute('value')
         self._src_textarea.clear()
