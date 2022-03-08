@@ -2,8 +2,10 @@ from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 
 
+# TODO rewrite this old selenium syntax to normal functions
+
 class IsTextPresent:
-    """An expectation for checking if text is present in the web elements value."""
+    """An expectation for checking if any text is present in the web elements value."""
 
     def __init__(self, element: WebElement):
         self.element: WebElement = element
@@ -13,8 +15,9 @@ class IsTextPresent:
 
 
 class TextNotPresent:
+    """An expectation for checking if a given text is not present in the web elements value."""
+
     def __init__(self, element: WebElement, text: str) -> None:
-        """An expectation for checking if given text is not present in the web elements value."""
         self.element: WebElement = element
         self.text: str = text
 
@@ -23,8 +26,11 @@ class TextNotPresent:
         return self.element if (self.text not in element_value) else False
 
 
-class TextNotPresentNorShorterThan:
-    """An expectation for checking if a given text is not present in the web element nor shorter than given limit."""
+class TextNotPresentAndLongerThan:
+    """
+    An expectation for checking if a given text is not present in the web elements' value attribute
+    and that text, that is present, is longer than the given limit.
+    """
 
     def __init__(self, element: WebElement, text: str, limit: int) -> None:
         self.element: WebElement = element
