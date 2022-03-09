@@ -1,7 +1,7 @@
 import os
 
 from abc import ABC
-from selenium import webdriver
+from selenium.webdriver.remote.webdriver import WebDriver
 
 
 WEBDRIVER_EXEC_DIR = os.path.normpath(r'./.webdrivers')
@@ -22,17 +22,17 @@ elif not os.path.exists(SERVICE_LOG_DIR):
 class AbstractBrowser(ABC):
     """Abstract superclass for browsers. Use a specific Browser class to instantiate a browser session."""
 
-    def __init__(self, driver: webdriver):
+    def __init__(self, driver: WebDriver):
         """
         :param driver: Which driver to use
         """
-        self.__driver: webdriver = driver
+        self.__driver: WebDriver = driver
         self.__driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
-    def get(self, url: str):
-        """Calls an URL in the browser."""
+    def get(self, url: str) -> None:
+        """Calls given URL in this browser."""
         self.driver.get(url)
 
     @property
-    def driver(self):
+    def driver(self) -> WebDriver:
         return self.__driver

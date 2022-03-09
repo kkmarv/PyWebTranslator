@@ -79,6 +79,10 @@ class TranslationService(ABC):
         except TimeoutException:
             return ""
 
+    def quit(self) -> None:
+        """Quits the translation service and its associated browser session."""
+        self._browser.driver.quit()
+
     @abstractmethod
     def _get_translation(self, from_text: str) -> str:
         """Defines the procedure to retrieve a translation from the website."""

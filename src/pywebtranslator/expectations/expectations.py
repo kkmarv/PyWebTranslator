@@ -1,4 +1,4 @@
-from selenium import webdriver
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 
 
@@ -21,7 +21,7 @@ class TextNotPresent:
         self.element: WebElement = element
         self.text: str = text
 
-    def __call__(self, driver: webdriver):
+    def __call__(self, driver: WebDriver):
         element_value: str = self.element.get_attribute('value')
         return self.element if (self.text not in element_value) else False
 
@@ -37,6 +37,6 @@ class TextNotPresentAndLongerThan:
         self.text: str = text
         self.limit = limit
 
-    def __call__(self, driver: webdriver):
+    def __call__(self, driver: WebDriver):
         element_value: str = self.element.get_attribute('value')
         return self.element if (self.text not in element_value) and (len(element_value) >= self.limit) else False

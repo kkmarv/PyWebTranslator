@@ -2,12 +2,8 @@ from pywebtranslator.services.deepl import DeepL
 from pywebtranslator.browsers.firefox import Firefox
 
 
-"""
-Some examples for usage:
-"""
-
 if __name__ == "__main__":
-    translator = DeepL(Firefox())
+    translator = DeepL(Firefox(is_headless=True))
 
     # get all languages the website offers to translate
     print(translator.supported_languages)
