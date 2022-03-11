@@ -1,6 +1,5 @@
 import os.path
 import pywebtranslator.browsers.abstractbrowser as browser
-
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.webdriver.edge.service import Service as EService
 from selenium.webdriver import Edge as EdgeDriver, EdgeOptions
@@ -10,8 +9,7 @@ class Edge(browser.AbstractBrowser):
     def __init__(self, is_headless=True):
         """Creates an Edge browser session.
 
-        :param is_headless: Whether the browser should run in the background (without GUI).
-        """
+        :param is_headless: Whether the browser should run in the background (without GUI)."""
 
         # prepare WebDriver options
         driver_options: EdgeOptions = EdgeOptions()
@@ -24,8 +22,8 @@ class Edge(browser.AbstractBrowser):
         # create a selenium WebDriver
         edge_driver: EdgeDriver = EdgeDriver(
             service=EService(
-                log_path=os.path.normpath(f'{browser.SERVICE_LOG_DIR}/msedgedriver.log'),
-                executable_path=EdgeChromiumDriverManager(path=browser.WEBDRIVER_EXEC_DIR).install()
+                log_path=os.path.normpath(os.path.join(browser.SERVICE_LOG_DIR, 'msedgedriver.log')),
+                executable_path=EdgeChromiumDriverManager(path=browser.WEBDRIVER_DIR, cache_valid_range=7).install()
             ),
             options=driver_options
         )
