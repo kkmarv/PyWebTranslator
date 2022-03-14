@@ -86,42 +86,42 @@ class TranslationService(ABC):
     @abstractmethod
     def _get_translation(self, from_text: str) -> str:
         """Defines the procedure to retrieve a translation from the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _get_supported_languages(self) -> dict:
         """Defines the procedure to get all supported languages from the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _get_source_language(self) -> str:
         """Defines the procedure to get the current input source language from the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _get_target_language(self) -> str:
         """Defines the procedure to get the current output target language from the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _set_source_language(self, language) -> None:
         """Defines the procedure to set the new source language on the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _set_target_language(self, language) -> None:
         """Defines the procedure to set the new target language on the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _set_languages(self, src_lang, tgt_lang) -> None:
         """Defines the procedure to set both languages at once on the website."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _switch_languages(self) -> None:
         """Defines the procedure to switch target- with source language on the website."""
-        pass
+        raise NotImplementedError
 
     # Getter & Setter
 

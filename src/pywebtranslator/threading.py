@@ -41,6 +41,13 @@ class TranslationServicePool:
         :param service The service to stash. Make sure it is not accessed after this call!"""
         self.__pool.append(service)
 
+    def translate(self, txt: str, src_lang: str, tgt_lang: str) -> str:
+        """Queries a single translation."""
+        service = self.claim()
+        translation = service.translate(txt, source_language=src_lang, target_language=tgt_lang)
+        self.stash(service)
+        return translation
+
     def quit(self) -> None:
         """Quits every service and its associated browser session."""
         for service in self.__services:

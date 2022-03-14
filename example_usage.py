@@ -1,9 +1,14 @@
 from pywebtranslator.services.deepl import DeepL
 from pywebtranslator.browsers.firefox import Firefox
+from pywebtranslator.browsers.edge import Edge
+from pywebtranslator.threading import TranslationServicePool
 
 
 if __name__ == "__main__":
-    translator = DeepL(Firefox(is_headless=True))
+    with TranslationServicePool(service_type=DeepL, browser_type=Edge) as tsp:
+        print(tsp.translate("Wasser, Zucker, Orangensaftkonzentrat", "de", "en"))
+
+    translator = DeepL(Firefox(is_headless=False))
 
     # get all languages the website offers to translate
     print(translator.supported_languages)
