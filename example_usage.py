@@ -1,14 +1,9 @@
-from pywebtranslator.services.deepl import DeepL
-from pywebtranslator.browsers.firefox import Firefox
-from pywebtranslator.browsers.edge import Edge
-from pywebtranslator.threading import TranslationServicePool
+from src.pywebtranslator.browser import Edge
+from src.pywebtranslator.services import DeepL
 
 
 if __name__ == "__main__":
-    with TranslationServicePool(service_type=DeepL, browser_type=Edge) as tsp:
-        print(tsp.translate("Wasser, Zucker, Orangensaftkonzentrat", "de", "en"))
-
-    translator = DeepL(Firefox(is_headless=False))
+    translator = DeepL(Edge(is_headless=False))
 
     # get all languages the website offers to translate
     print(translator.supported_languages)
@@ -23,8 +18,8 @@ if __name__ == "__main__":
     print(translator.translate("Passi er en lille edderkop.", source_language="da", target_language="en"))
 
     # translate english stuff
-    print(translator.translate("Eine Weißwurst, bitte.", "de", "en"))
     print(translator.translate("Hello", "en", "de"))
+    print(translator.translate("Eine Weißwurst, bitte.", "de", "en"))
     print(translator.translate("Eine Weißwurst, bitte.", "de", "ru"))
 
     # translate text in same language but fast
