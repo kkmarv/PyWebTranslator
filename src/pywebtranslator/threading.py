@@ -11,10 +11,8 @@ class TranslationServicePool:
     def __init__(self,
                  service_type: AbstractService.__class__,
                  browser_type: AbstractBrowser.__class__,
-                 is_headless=True,
-                 timeout_threshold=30):
+                 is_headless=True):
         self.is_headless: bool = is_headless
-        self.timeout_threshold: int = timeout_threshold
         self.service_type: AbstractService.__class__ = service_type
         self.browser_type: AbstractBrowser.__class__ = browser_type
 
@@ -28,7 +26,7 @@ class TranslationServicePool:
     def claim(self) -> AbstractService:
         """Returns a service from the pool or creates a new one if all services are in use."""
         if len(self.__pool) <= 0:
-            ts_service = self.service_type(self.browser_type(is_headless=self.is_headless), self.timeout_threshold)
+            ts_service = self.service_type(self.browser_type(is_headless=self.is_headless))
             self.__services.append(ts_service)
             self.__pool.append(ts_service)
         return self.__pool.pop()
@@ -46,6 +44,5 @@ class TranslationServicePool:
         return translation
 
     def quit(self) -> None:
-        """Quits every service and its associated browser session."""
         for service in self.__services:
-            service.quit()
+            service.quit()  # TODO not always closing when error or ctrl+c

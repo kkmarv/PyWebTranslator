@@ -36,6 +36,9 @@ class AbstractBrowser(ABC):
         self.__driver: WebDriver = driver
         self.__driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
+    def __del__(self):
+        self.__driver.quit()
+
     def get(self, url: str) -> None:
         """Calls given URL in this browser."""
         self.driver.get(url)
@@ -79,7 +82,7 @@ class Firefox(AbstractBrowser):
 
         # prepare WebDriver options
         driver_options: FirefoxOptions = FirefoxOptions()
-        driver_options.headless = is_headless
+        driver_options.headless = is_headless  # use this, without it threads are not working!
 
         # create a selenium WebDriver
         firefox_driver: FirefoxDriver = FirefoxDriver(
