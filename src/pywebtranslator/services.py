@@ -2,12 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support.expected_conditions import (
-    text_to_be_present_in_element,
-    visibility_of_all_elements_located
-)
+from selenium.webdriver.support.expected_conditions import text_to_be_present_in_element
 from selenium.webdriver.support.wait import WebDriverWait
 
 from .drivers import Driver
