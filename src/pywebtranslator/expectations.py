@@ -8,7 +8,7 @@ class IsTextPresent:
     """An expectation for checking if any text is present in the web elements value."""
 
     def __init__(self, element: WebElement):
-        self.element: WebElement = element
+        self.element = element
 
     def __call__(self, driver):
         return self.element if len(self.element.text) > 0 else False
@@ -18,8 +18,8 @@ class TextNotPresent:
     """An expectation for checking if a given text is not present in the web elements value."""
 
     def __init__(self, element: WebElement, text: str) -> None:
-        self.element: WebElement = element
-        self.text: str = text
+        self.element = element
+        self.text = text
 
     def __call__(self, driver: WebDriver):
         element_value: str = self.element.get_attribute('value')
@@ -33,8 +33,8 @@ class TextNotPresentAndLongerThan:
     """
 
     def __init__(self, element: WebElement, text: str, limit: int) -> None:
-        self.element: WebElement = element
-        self.text: str = text
+        self.element = element
+        self.text = text
         self.limit = limit
 
     def __call__(self, driver: WebDriver):

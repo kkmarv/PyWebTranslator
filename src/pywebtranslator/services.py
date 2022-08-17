@@ -35,7 +35,7 @@ class TranslationService(ABC):
         """
 
         # instantiate a browser
-        self._driver: Driver = driver
+        self._driver = driver
         self._driver.get(translation_service_url)
 
         # used to prevent cookie banners on lower windows sizes to obscure the whole viewport
@@ -206,7 +206,7 @@ class DeepL(TranslationService):
         return supported_languages
 
     def _get_current_src_lang(self) -> str:
-        cur_src_language = self._driver.search_elem(self._SRC_LANG_LIST_BTN).text
+        cur_src_language: str = self._driver.search_elem(self._SRC_LANG_LIST_BTN).text
         # DeepL has weird behaviour here: we need to remove overlapping text, which is separated by line breaks
         cur_src_language = cur_src_language if '\n' not in cur_src_language else cur_src_language.split('\n')[1]
         # return the source language's key

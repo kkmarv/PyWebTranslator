@@ -36,7 +36,7 @@ class Driver(ABC):
         """Abstract superclass for selenium web drivers. Use a specific driver class to instantiate a driver session.
 
         :param driver: Which driver to use"""
-        self._driver: WebDriver = driver
+        self._driver = driver
         self._wait_for_webelem: WebDriverWait = WebDriverWait(self._driver, 5)
         self._driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
@@ -47,7 +47,7 @@ class Driver(ABC):
         """Calls given URL in this driver."""
         self.driver.get(url)
 
-    def click_elem(self, css_path) -> None:
+    def click_elem(self, css_path: str) -> None:
         """Tries to find and click an element."""
         self.search_elem(css_path).click()
 
