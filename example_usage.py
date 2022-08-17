@@ -1,15 +1,14 @@
 from src.pywebtranslator.browser import Edge
 from src.pywebtranslator.services import DeepL
 
-
 if __name__ == "__main__":
     translator = DeepL(Edge(is_headless=False))
 
     # get all languages the website offers to translate
-    print(translator.supported_languages)
+    print(translator.sup_langs)
 
     # get current source and target language
-    print(translator.source_language, translator.target_language)
+    print(translator.src_lang, translator.tgt_lang)
 
     # translate some text
     print(translator.translate("Makes sure to quit the driver when exiting the program.", "en", "de"))
@@ -17,7 +16,7 @@ if __name__ == "__main__":
     print(translator.translate("Passi ist eine kleine Spinne.", source_language="de", target_language="da"))
     print(translator.translate("Passi er en lille edderkop.", source_language="da", target_language="en"))
 
-    # translate english stuff
+    # swap languages
     print(translator.translate("Hello", "en", "de"))
     print(translator.translate("Eine Weißwurst, bitte.", "de", "en"))
     print(translator.translate("Eine Weißwurst, bitte.", "de", "ru"))

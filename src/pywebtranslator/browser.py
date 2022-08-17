@@ -1,17 +1,20 @@
 import os
-
-# abstract
 from abc import ABC
-from selenium.webdriver.remote.webdriver import WebDriver
-# edge
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from selenium.webdriver.edge.service import Service as EService
-from selenium.webdriver import Edge as EdgeDriver, EdgeOptions
-# firefox
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.service import Service as FFService
-from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
 
+from selenium.webdriver import Edge as EdgeDriver, EdgeOptions
+from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.edge.service import Service as EService
+from selenium.webdriver.firefox.service import Service as FFService
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.expected_conditions import (
+    visibility_of_element_located,
+    visibility_of_all_elements_located
+)
+from selenium.webdriver.support.wait import WebDriverWait
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 WEBDRIVER_DIR = os.path.abspath(os.path.normpath(r'.webdriver/'))
 SERVICE_LOG_DIR = os.path.join(WEBDRIVER_DIR, 'logs/')
@@ -28,27 +31,52 @@ if not os.path.exists(SERVICE_LOG_DIR):
     os.mkdir(SERVICE_LOG_DIR)
 
 
-class AbstractBrowser(ABC):
+class Driver(ABC):
     def __init__(self, driver: WebDriver):
         """Abstract superclass for browsers. Use a specific Browser class to instantiate a browser session.
 
         :param driver: Which driver to use"""
-        self.__driver: WebDriver = driver
-        self.__driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
+        self._driver: WebDriver = driver
+        self._wait_for_webelem: WebDriverWait = WebDriverWait(self._driver, 5)
+        self._driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
     def __del__(self):
-        self.__driver.quit()
+        self._driver.quit()
 
     def get(self, url: str) -> None:
         """Calls given URL in this browser."""
         self.driver.get(url)
 
+    def click_elem(self, css_path) -> None:
+        """Tries to find and click an element."""
+        self.search_elem(css_path).click()
+
+    def search_elem(self, css_path: str) -> WebElement:
+        """
+        Searches with a CSS selector for a single element in the HTML DOM
+        and returns the corresponding element if found.
+        """
+        return self._wait_for_webelem.until(
+            visibility_of_element_located((By.CSS_SELECTOR, css_path)),
+            f'Path {css_path} not found.'
+        )
+
+    def search_elems(self, css_path: str) -> list[WebElement]:
+        """
+        Searches with a CSS selector for multiple elements in the HTML DOM
+        and returns the corresponding elements if found.
+        """
+        return self._wait_for_webelem.until(
+            visibility_of_all_elements_located((By.CSS_SELECTOR, css_path)),
+            f'Path {css_path} not found.'
+        )
+
     @property
     def driver(self) -> WebDriver:
-        return self.__driver
+        return self._driver
 
 
-class Edge(AbstractBrowser):
+class Edge(Driver):
     def __init__(self, is_headless=True):
         """Creates an Edge browser session.
 
@@ -74,7 +102,7 @@ class Edge(AbstractBrowser):
         super().__init__(edge_driver)
 
 
-class Firefox(AbstractBrowser):
+class Firefox(Driver):
     def __init__(self, is_headless=True):
         """Creates a Firefox browser session.
 
