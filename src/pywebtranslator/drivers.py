@@ -33,7 +33,7 @@ if not os.path.exists(SERVICE_LOG_DIR):
 
 class Driver(ABC):
     def __init__(self, driver: WebDriver):
-        """Abstract superclass for browsers. Use a specific Browser class to instantiate a browser session.
+        """Abstract superclass for selenium web drivers. Use a specific driver class to instantiate a driver session.
 
         :param driver: Which driver to use"""
         self._driver: WebDriver = driver
@@ -44,7 +44,7 @@ class Driver(ABC):
         self._driver.quit()
 
     def get(self, url: str) -> None:
-        """Calls given URL in this browser."""
+        """Calls given URL in this driver."""
         self.driver.get(url)
 
     def click_elem(self, css_path) -> None:
@@ -78,9 +78,9 @@ class Driver(ABC):
 
 class Edge(Driver):
     def __init__(self, is_headless=True):
-        """Creates an Edge browser session.
+        """Creates an Edge session.
 
-        :param is_headless: Whether the browser should run in the background (without GUI)."""
+        :param is_headless: Whether the driver should run headless (without GUI)."""
 
         # prepare WebDriver options
         driver_options: EdgeOptions = EdgeOptions()
@@ -104,9 +104,9 @@ class Edge(Driver):
 
 class Firefox(Driver):
     def __init__(self, is_headless=True):
-        """Creates a Firefox browser session.
+        """Creates a Firefox session.
 
-        :param is_headless: Whether the browser should run in the background (without GUI)."""
+        :param is_headless: Whether the driver should run headless (without GUI)."""
 
         # prepare WebDriver options
         driver_options: FirefoxOptions = FirefoxOptions()

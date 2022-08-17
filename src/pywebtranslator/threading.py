@@ -1,20 +1,23 @@
-from .browser import Driver
+from .drivers import Driver
 from .services import TranslationService
 
 
 class TranslationServicePool:
-    """A context manager for multiple TranslationService objects. It simultaneous creates as many of them as needed."""
+    """
+    A context manager for multiple TranslationService objects.
+    It creates simultaneous as many TranslationService objects as needed.
+    """
 
     __pool: list[TranslationService] = []
     __services: list[TranslationService] = []
 
     def __init__(self,
                  service_type: TranslationService.__class__,
-                 browser_type: Driver.__class__,
+                 driver_type: Driver.__class__,
                  is_headless=True):
         self.is_headless: bool = is_headless
         self.service_type: TranslationService.__class__ = service_type
-        self.browser_type: Driver.__class__ = browser_type
+        self.driver_type: Driver.__class__ = driver_type
 
     def __enter__(self):
         return self
@@ -26,7 +29,7 @@ class TranslationServicePool:
     def claim(self) -> TranslationService:
         """Returns a service from the pool or creates a new one if all services are in use."""
         if len(self.__pool) <= 0:
-            ts_service = self.service_type(self.browser_type(is_headless=self.is_headless))
+            ts_service = self.service_type(self.driver_type(is_headless=self.is_headless))
             self.__services.append(ts_service)
             self.__pool.append(ts_service)
         return self.__pool.pop()

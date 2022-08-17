@@ -1,4 +1,4 @@
-from src.pywebtranslator.browser import Edge
+from src.pywebtranslator.drivers import Edge
 from src.pywebtranslator.services import DeepL
 
 if __name__ == "__main__":

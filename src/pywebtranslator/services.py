@@ -10,7 +10,7 @@ from selenium.webdriver.support.expected_conditions import (
 )
 from selenium.webdriver.support.wait import WebDriverWait
 
-from .browser import Driver
+from .drivers import Driver
 from .errors import BadSourceLanguageError, BadTargetLanguageError
 from .expectations import TextNotPresentAndLongerThan
 
