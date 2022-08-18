@@ -19,10 +19,10 @@ concepts and techniques I've learned along the way.
 ## Disclaimer
 
 The people behind [DeepL](https://www.deepl.com/translator) offer the best online translation available by far and so
-its commercial use comes at a small price. And using a web scraper isn't exactly in accordance with the terms of us of
-DeepL or any other service.
+its commercial use comes at a small price. And using a web scraper isn't exactly in accordance with their terms of use
+or any other service.
 
-**So please consider this Repository as educational purpose only.**
+**So please consider this repository as educational purpose only.**
 
 ## Minimal working example
 
@@ -31,11 +31,13 @@ DeepL or any other service.
 For this example, clone the repository and create a Python source file under `PyWebTranslator/` which contains the
 following lines:
 
-    from src.pywebtranslator.drivers import Edge # or Firefox
-    from src.pywebtranslator.services import DeepL 
+```python
+from src.pywebtranslator.drivers import Edge  # or Firefox
+from src.pywebtranslator.services import DeepL
 
-    browser = Edge()
-    translator = DeepL(browser)
+browser = Edge()
+translator = DeepL(browser)
+```
 
 ### CLI
 
