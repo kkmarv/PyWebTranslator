@@ -2,7 +2,7 @@ import os
 from abc import ABC
 from typing import Optional
 
-from selenium.webdriver import Edge as EdgeDriver, EdgeOptions
+from selenium.webdriver import Edge as EdgeDriver, EdgeOptions, Keys
 from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.service import Service as EService
@@ -40,7 +40,6 @@ class Driver(ABC):
 
         self._driver = driver
         self._wait_for_elem: WebDriverWait = WebDriverWait(self._driver, 5)
-        self._driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
 
         self._url: Optional[str] = None
         self._main_window_handle: Optional[str] = None  # main tab which gets created upon calling set_url()
@@ -49,14 +48,19 @@ class Driver(ABC):
         self._driver.quit()
 
     def set_url(self, url: str) -> None:
-        """Creates a new tab and calls given URL in this driver."""
+        """Creates a new tab and calls given URL in this driver.
+
+        :param url: The URL to call"""
         self._driver.get(url)
         self._url = url
         self._main_window_handle = self._driver.current_window_handle
 
     def click_elem(self, css_path: str) -> None:
-        """Tries to find and click an element."""
-        self.search_elem(css_path).click()
+        """Tries to find and click an element by hitting enter on it.
+        This way, it works even if the element is visibly obstructed.
+
+        :param css_path: CSS selector for the element."""
+        self.search_elem(css_path).send_keys(Keys.RETURN)
 
     def search_elem(self, css_path: str) -> WebElement:
         """Searches with a CSS selector for a single element in the HTML DOM
@@ -81,10 +85,8 @@ class Driver(ABC):
         )
 
     def discard_tabs(self):
-        """Closes all tabs in the current session except the main tab set through set_url()
-
-        Especially useful if in a longer lasting session multiple tabs were opened that need to be cleaned up.
-        """
+        """Closes all tabs in the current session except the main tab set through set_url().
+        Especially useful if in a longer lasting session multiple tabs were opened that need to be cleaned up."""
         for window in self._driver.window_handles:
             self._driver.switch_to.window(window)
             if self._driver.current_window_handle != self._main_window_handle:

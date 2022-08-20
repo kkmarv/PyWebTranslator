@@ -12,29 +12,32 @@ from .expectations import TextNotPresentAndLongerThan
 
 
 class TranslationService(ABC):
-    """Translation services base class. Use a specific TranslationService class to start translating."""
+    """Translation service base class. Use a specific TranslationService class to start translating."""
 
     URL: str = ...
     CSS: dict[str, str | list[str]] = ...
 
     def __init__(self,
                  driver: Driver,
-                 translation_service_url: str,
+                 service_url: str,
                  src_textarea: str,
-                 tgt_textarea: str):
+                 tgt_textarea: str,
+                 allow_perf_cookies=False):
         """Calls given URL in given browser and sets up the website for the translation process.
 
-        :param driver: The Browser class to use
-        :param translation_service_url: URL of the specified translation service
-        :param src_textarea: CSS path to the source language textarea within the website
-        :param tgt_textarea: CSS path to the target language textarea within the website"""
+        :param driver:              The Browser class to use.
+        :param service_url:         URL of the specified translation service.
+        :param src_textarea:        CSS path to the source language textarea within the website.
+        :param tgt_textarea:        CSS path to the target language textarea within the website.
+        :param allow_perf_cookies:  Whether to accept the websites performances cookies.
+                                    for a possible translation speed up. May not work for all services."""
 
         # instantiate a browser
         self._driver = driver
-        self._driver.set_url(translation_service_url)
+        self._driver.set_url(service_url)
 
-        # used to prevent cookie banners on lower windows sizes to obscure the whole viewport
-        self._accept_cookies()
+        if allow_perf_cookies:
+            self._accept_perf_cookies()
 
         # get the text areas that are relevant for translating
         self._src_textarea: WebElement = self._driver.search_elem(src_textarea)
@@ -53,15 +56,15 @@ class TranslationService(ABC):
     def is_src_lang_supported(self, language: str) -> bool:
         """Checks with the list of source languages on the website and returns if given language is supported.
 
-        :param language: The language to check if it is supported.
-        :return: Whether the given language is supported as a source language by this service or not."""
+        :param language:    The language to check if it is supported.
+        :return:            Whether the given language is supported as a source language by this service or not."""
         return language is not None and language in self.sup_langs['src_langs'].keys()
 
     def is_tgt_lang_supported(self, language: str) -> bool:
         """Checks with the list of target languages on the website and returns if given language is supported.
 
-        :param language: The language to check if it is supported.
-        :return: Whether the given language is supported as a target language by this service or not."""
+        :param language:    The language to check if it is supported.
+        :return:            Whether the given language is supported as a target language by this service or not."""
         return language is not None and language in self.sup_langs['tgt_langs'].keys()
 
     def translate(self, text: str, source_language: str, target_language: str, fallback: Optional[str] = None) -> str:
@@ -89,8 +92,8 @@ class TranslationService(ABC):
         """Quits the translation service and its associated browser session."""
         self._driver.driver.quit()
 
-    def _accept_cookies(self) -> None:
-        """Removes cookie banner which takes up viewport space and potentially obstructing other elements."""
+    def _accept_perf_cookies(self) -> None:
+        """Accepts performance cookies for possible faster translation. May not work for all services."""
         for btn in self.CSS['cookie_btn_list']:
             self._driver.click_elem(btn)
 
@@ -159,7 +162,7 @@ class DeepL(TranslationService):
     def __init__(self, driver: Driver):
         super().__init__(
             driver=driver,
-            translation_service_url=self.URL,
+            service_url=self.URL,
             src_textarea=self.CSS['src_textarea'],
             tgt_textarea=self.CSS['tgt_textarea']
         )
@@ -261,7 +264,7 @@ class DeepL(TranslationService):
 
     def _switch_langs(self) -> None:
         # first, switch languages on webpage then switch class variables too
-        self._driver.search_elem(self.CSS['lang_switch_btn']).click()
+        self._driver.click_elem(self.CSS['lang_switch_btn'])
         self.src_lang, self.tgt_lang = self.tgt_lang, self.src_lang
 
 
