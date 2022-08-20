@@ -14,8 +14,8 @@ from .expectations import TextNotPresentAndLongerThan
 class TranslationService(ABC):
     """Translation services base class. Use a specific TranslationService class to start translating."""
 
-    URL: str = ''
-    _COOKIE_BTN_LIST: list[str] = []
+    URL: str = ...
+    CSS: dict[str, str | list[str]] = ...
 
     def __init__(self,
                  driver: Driver,
@@ -27,12 +27,11 @@ class TranslationService(ABC):
         :param driver: The Browser class to use
         :param translation_service_url: URL of the specified translation service
         :param src_textarea: CSS path to the source language textarea within the website
-        :param tgt_textarea: CSS path to the target language textarea within the website
-        """
+        :param tgt_textarea: CSS path to the target language textarea within the website"""
 
         # instantiate a browser
         self._driver = driver
-        self._driver.get(translation_service_url)
+        self._driver.set_url(translation_service_url)
 
         # used to prevent cookie banners on lower windows sizes to obscure the whole viewport
         self._accept_cookies()
@@ -67,10 +66,12 @@ class TranslationService(ABC):
 
     def translate(self, text: str, source_language: str, target_language: str, fallback: Optional[str] = None) -> str:
         """Parses given text to website, calls _get_translation() and returns its result.
-        Returns empty string if _get_translation() times out."""
+
+        :return: The translated text or an empty string if _get_translation() times out."""
         if len(text) <= 1:  # return text if its just one letter
             return text
 
+        self._driver.discard_tabs()
         self._set_langs(source_language, target_language)
 
         # send the text to the website
@@ -84,13 +85,14 @@ class TranslationService(ABC):
             else:
                 raise te
 
-    def _accept_cookies(self) -> None:
-        for btn in self._COOKIE_BTN_LIST:
-            self._driver.click_elem(btn)
-
     def quit(self) -> None:
         """Quits the translation service and its associated browser session."""
         self._driver.driver.quit()
+
+    def _accept_cookies(self) -> None:
+        """Removes cookie banner which takes up viewport space and potentially obstructing other elements."""
+        for btn in self.CSS['cookie_btn_list']:
+            self._driver.click_elem(btn)
 
     # Abstract methods
 
@@ -100,7 +102,7 @@ class TranslationService(ABC):
         ...
 
     @abstractmethod
-    def _get_sup_langs(self) -> dict:
+    def _get_sup_langs(self) -> dict[str, dict[str, str]]:
         """Defines the procedure to get all supported languages from the website."""
         ...
 
@@ -138,33 +140,33 @@ class TranslationService(ABC):
 class DeepL(TranslationService):
     """Holds information and methods to interact with www.deepl.com."""
 
-    URL: str = r"https://www.deepl.com/"
-    _COOKIE_BTN_LIST: list[str] = [
-        r"input[id='cookie-checkbox-performance']",  # accept performance cookies
-        r"button[class='dl_cookieBanner--buttonSelected']"  # accept selected cookies
-    ]
-
-    _SRC_TEXTAREA: str = r"textarea[dl-test='translator-source-input']"
-    _TGT_TEXTAREA: str = r"textarea[dl-test='translator-target-input']"
-
-    _PAYWALL_DIV: str = r"div[class='lmt__notification__blocked_content']"
-    _SRC_LANG_LIST: str = r"div[dl-test='translator-source-lang-list'] > .lmt__language_wrapper > .lmt__language_select_column > *"
-    _TGT_LANG_LIST: str = r"div[dl-test='translator-target-lang-list'] > .lmt__language_wrapper > .lmt__language_select_column > *"
-    _SRC_LANG_LIST_BTN: str = r"button[dl-test='translator-source-lang-btn']"
-    _TGT_LANG_LIST_BTN: str = r"button[dl-test='translator-target-lang-btn']"
-    _LANG_SWITCH_BTN: str = r"button[data-testid='deepl-ui-tooltip-target']"
+    URL = r"https://www.deepl.com/translate"
+    CSS = {
+        'src_textarea': r"textarea[dl-test='translator-source-input']",
+        'tgt_textarea': r"textarea[dl-test='translator-target-input']",
+        'paywall_div': r"div[class='lmt__notification__blocked_content']",
+        'src_lang_list': r"div[dl-test='translator-source-lang-list'] > .lmt__language_wrapper > .lmt__language_select_column > *",
+        'tgt_lang_list': r"div[dl-test='translator-target-lang-list'] > .lmt__language_wrapper > .lmt__language_select_column > *",
+        'src_lang_list_btn': r"button[dl-test='translator-source-lang-btn']",
+        'tgt_lang_list_btn': r"button[dl-test='translator-target-lang-btn']",
+        'lang_switch_btn': r"button[data-testid='deepl-ui-tooltip-target']",
+        'cookie_btn_list': [
+            r"input[id='cookie-checkbox-performance']",  # select performance cookies
+            r"button[class='dl_cookieBanner--buttonSelected']"  # accept selected cookies
+        ]
+    }
 
     def __init__(self, driver: Driver):
         super().__init__(
             driver=driver,
             translation_service_url=self.URL,
-            src_textarea=self._SRC_TEXTAREA,
-            tgt_textarea=self._TGT_TEXTAREA
+            src_textarea=self.CSS['src_textarea'],
+            tgt_textarea=self.CSS['tgt_textarea']
         )
 
     def _is_paywall_visible(self) -> bool:
         try:
-            self._driver.search_elem(self._PAYWALL_DIV)
+            self._driver.search_elem(self.CSS['paywall_div'])
             return True
         except TimeoutException:
             return False
@@ -181,28 +183,28 @@ class DeepL(TranslationService):
         self._src_textarea.clear()
         return translation
 
-    def _get_sup_langs(self) -> dict:
+    def _get_sup_langs(self) -> dict[str, dict[str, str]]:
         # get supported languages from list
         supported_languages = {'src_langs': {}, 'tgt_langs': {}}
 
         # show src language list and get the list of source languages
-        self._driver.click_elem(self._SRC_LANG_LIST_BTN)
-        for btn in self._driver.search_elems(self._SRC_LANG_LIST):
+        self._driver.click_elem(self.CSS['src_lang_list_btn'])
+        for btn in self._driver.search_elems(self.CSS['src_lang_list']):
             lang_id = '-'.join(btn.get_attribute('dl-test').split('-')[3:])
             supported_languages['src_langs'][lang_id] = btn.text
-        self._driver.click_elem(self._SRC_LANG_LIST_BTN)
+        self._driver.click_elem(self.CSS['src_lang_list_btn'])
 
         # show tgt language list and get the list of target languages
-        self._driver.click_elem(self._TGT_LANG_LIST_BTN)
-        for btn in self._driver.search_elems(self._TGT_LANG_LIST):
+        self._driver.click_elem(self.CSS['tgt_lang_list_btn'])
+        for btn in self._driver.search_elems(self.CSS['tgt_lang_list']):
             lang_id = '-'.join(btn.get_attribute('dl-test').split('-')[3:])
             supported_languages['tgt_langs'][lang_id] = btn.text
-        self._driver.click_elem(self._TGT_LANG_LIST_BTN)
+        self._driver.click_elem(self.CSS['tgt_lang_list_btn'])
 
         return supported_languages
 
     def _get_current_src_lang(self) -> str:
-        cur_src_language: str = self._driver.search_elem(self._SRC_LANG_LIST_BTN).text
+        cur_src_language: str = self._driver.search_elem(self.CSS['src_lang_list_btn']).text
         # DeepL has weird behaviour here: we need to remove overlapping text, which is separated by line breaks
         cur_src_language = cur_src_language if '\n' not in cur_src_language else cur_src_language.split('\n')[1]
         # return the source language's key
@@ -210,7 +212,7 @@ class DeepL(TranslationService):
             list(self.sup_langs['src_langs'].values()).index(cur_src_language)]
 
     def _get_current_tgt_lang(self) -> str:
-        tgt_lang_list_btn_text: str = self._driver.search_elem(self._TGT_LANG_LIST_BTN).text
+        tgt_lang_list_btn_text: str = self._driver.search_elem(self.CSS['tgt_lang_list_btn']).text
         for language in self.sup_langs['tgt_langs'].values():
             # we want to search only for those values that are in our supported_languages
             if language in tgt_lang_list_btn_text:
@@ -224,7 +226,7 @@ class DeepL(TranslationService):
             raise BadSourceLanguageError('DeepL', src_lang)
 
         if src_lang != self.src_lang:  # skip changing if its already selected
-            self._driver.click_elem(self._SRC_LANG_LIST_BTN)
+            self._driver.click_elem(self.CSS['src_lang_list_btn'])
             self._driver.click_elem(f"button[dl-test='translator-lang-option-{src_lang}']")
             self.src_lang = src_lang
 
@@ -232,7 +234,7 @@ class DeepL(TranslationService):
         tgt_lang = tgt_lang.lower()
 
         if tgt_lang != self.tgt_lang and tgt_lang != self.src_lang:  # skip changing if its already selected
-            self._driver.click_elem(self._TGT_LANG_LIST_BTN)
+            self._driver.click_elem(self.CSS['tgt_lang_list_btn'])
             if tgt_lang == 'en':  # unless specified otherwise, translate to standard english
                 try:
                     self._driver.click_elem(f"button[dl-test='translator-lang-option-en-GB']")
@@ -259,7 +261,7 @@ class DeepL(TranslationService):
 
     def _switch_langs(self) -> None:
         # first, switch languages on webpage then switch class variables too
-        self._driver.search_elem(self._LANG_SWITCH_BTN).click()
+        self._driver.search_elem(self.CSS['lang_switch_btn']).click()
         self.src_lang, self.tgt_lang = self.tgt_lang, self.src_lang
 
 

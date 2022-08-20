@@ -1,5 +1,6 @@
 import os
 from abc import ABC
+from typing import Optional
 
 from selenium.webdriver import Edge as EdgeDriver, EdgeOptions
 from selenium.webdriver import Firefox as FirefoxDriver, FirefoxOptions
@@ -36,40 +37,60 @@ class Driver(ABC):
         """Abstract superclass for selenium web drivers. Use a specific driver class to instantiate a driver session.
 
         :param driver: Which driver to use"""
+
         self._driver = driver
-        self._wait_for_webelem: WebDriverWait = WebDriverWait(self._driver, 5)
+        self._wait_for_elem: WebDriverWait = WebDriverWait(self._driver, 5)
         self._driver.set_window_size(1920, 1080)  # at this size, every button used is inside the viewport
+
+        self._url: Optional[str] = None
+        self._main_window_handle: Optional[str] = None  # main tab which gets created upon calling set_url()
 
     def __del__(self):
         self._driver.quit()
 
-    def get(self, url: str) -> None:
-        """Calls given URL in this driver."""
-        self.driver.get(url)
+    def set_url(self, url: str) -> None:
+        """Creates a new tab and calls given URL in this driver."""
+        self._driver.get(url)
+        self._url = url
+        self._main_window_handle = self._driver.current_window_handle
 
     def click_elem(self, css_path: str) -> None:
         """Tries to find and click an element."""
         self.search_elem(css_path).click()
 
     def search_elem(self, css_path: str) -> WebElement:
-        """
-        Searches with a CSS selector for a single element in the HTML DOM
+        """Searches with a CSS selector for a single element in the HTML DOM
         and returns the corresponding element if found.
-        """
-        return self._wait_for_webelem.until(
+
+        :param css_path: A CSS selector for a single element.
+        :return: The corresponding selenium WebElement, if found."""
+        return self._wait_for_elem.until(
             visibility_of_element_located((By.CSS_SELECTOR, css_path)),
             f'Path {css_path} not found.'
         )
 
     def search_elems(self, css_path: str) -> list[WebElement]:
-        """
-        Searches with a CSS selector for multiple elements in the HTML DOM
+        """Searches with a CSS selector for multiple elements in the HTML DOM
         and returns the corresponding elements if found.
-        """
-        return self._wait_for_webelem.until(
+
+        :param css_path: A css selector for selecting more than one element.
+        :return: The corresponding list of selenium WebElements, if found."""
+        return self._wait_for_elem.until(
             visibility_of_all_elements_located((By.CSS_SELECTOR, css_path)),
             f'Path {css_path} not found.'
         )
+
+    def discard_tabs(self):
+        """Closes all tabs in the current session except the main tab set through set_url()
+
+        Especially useful if in a longer lasting session multiple tabs were opened that need to be cleaned up.
+        """
+        for window in self._driver.window_handles:
+            self._driver.switch_to.window(window)
+            if self._driver.current_window_handle != self._main_window_handle:
+                self._driver.close()
+
+        self._driver.switch_to.window(self._main_window_handle)  # switch back to main tab
 
     @property
     def driver(self) -> WebDriver:
