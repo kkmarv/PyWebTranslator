@@ -1,5 +1,5 @@
-from src.pywebtranslator.drivers import Edge
-from src.pywebtranslator.services import DeepL
+from p.drivers import Edge
+from p.services import DeepL
 
 if __name__ == "__main__":
     translator = DeepL(Edge(is_headless=False))

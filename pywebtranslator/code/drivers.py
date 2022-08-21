@@ -1,5 +1,5 @@
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Optional
 
 from selenium.webdriver import Edge as EdgeDriver, EdgeOptions, Keys
@@ -17,7 +17,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-WEBDRIVER_DIR = os.path.abspath(os.path.normpath(r'.webdriver/'))
+WEBDRIVER_DIR = os.path.abspath(os.path.normpath(r'../.webdriver/'))
 SERVICE_LOG_DIR = os.path.join(WEBDRIVER_DIR, 'logs/')
 
 # WebDriverManager environment variables
@@ -33,6 +33,7 @@ if not os.path.exists(SERVICE_LOG_DIR):
 
 
 class Driver(ABC):
+    @abstractmethod  # used to indicate to isabstract() that the Driver class is abstract
     def __init__(self, driver: WebDriver):
         """Abstract superclass for selenium web drivers. Use a specific driver class to instantiate a driver session.
 
@@ -100,6 +101,8 @@ class Driver(ABC):
 
 
 class Edge(Driver):
+    """https://www.microsoft.com/en-us/edge"""
+
     def __init__(self, is_headless=True):
         """Creates an Edge session.
 
@@ -126,6 +129,8 @@ class Edge(Driver):
 
 
 class Firefox(Driver):
+    """https://www.mozilla.org/en-GB/firefox/new/"""
+
     def __init__(self, is_headless=True):
         """Creates a Firefox session.
 

@@ -1,5 +1,5 @@
-from .drivers import Driver
-from .services import TranslationService
+from code.drivers import Driver
+from code.services import TranslationService
 
 
 class TranslationServicePool:

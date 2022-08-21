@@ -6,9 +6,9 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.expected_conditions import text_to_be_present_in_element
 from selenium.webdriver.support.wait import WebDriverWait
 
-from .drivers import Driver
-from .errors import BadSourceLanguageError, BadTargetLanguageError
-from .expectations import TextNotPresentAndLongerThan
+from code.drivers import Driver
+from code.errors import BadSourceLanguageError, BadTargetLanguageError
+from code.expectations import TextNotPresentAndLongerThan
 
 
 class TranslationService(ABC):
@@ -29,8 +29,8 @@ class TranslationService(ABC):
         :param service_url:         URL of the specified translation service.
         :param src_textarea:        CSS path to the source language textarea within the website.
         :param tgt_textarea:        CSS path to the target language textarea within the website.
-        :param allow_perf_cookies:  Whether to accept the websites performances cookies.
-                                    for a possible translation speed up. May not work for all services."""
+        :param allow_perf_cookies:  Whether to accept the websites performances cookies for a possible
+                                    translation speed up. May not work for all services."""
 
         # instantiate a browser
         self._driver = driver
